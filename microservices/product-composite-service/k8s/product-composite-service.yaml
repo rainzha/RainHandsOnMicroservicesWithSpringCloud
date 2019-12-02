@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: product-composite-rainhandson
+  labels:
+    svc: product-composite
+    app: rainhandson
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      svc: product-composite
+      app: rainhandson
+  template:
+    metadata:
+      labels:
+        svc: product-composite
+        app: rainhandson
+    spec:
+      containers:
+        - name: product-composite-rainhandson
+          image: registry.cn-hangzhou.aliyuncs.com/rainzha/product-composite-service:1.0
+          env:
+            - name: SPRING_PROFILES_ACTIVE
+              value: "docker"
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: product-composite-rainhandson
+spec:
+  ports:
+    - port: 8080
+  selector:
+    svc: product-composite
+    app: rainhandson
