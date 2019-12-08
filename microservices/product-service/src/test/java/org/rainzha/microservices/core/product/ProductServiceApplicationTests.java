@@ -11,7 +11,6 @@ import static org.springframework.http.HttpStatus.BAD_REQUEST;
 import static org.springframework.http.HttpStatus.UNPROCESSABLE_ENTITY;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
-@AutoConfigureWebTestClient
 class ProductServiceApplicationTests {
     @Test
     void getProductById(@Autowired WebTestClient webClient) {
