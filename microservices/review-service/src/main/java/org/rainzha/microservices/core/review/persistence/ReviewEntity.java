@@ -3,7 +3,7 @@ package org.rainzha.microservices.core.review.persistence;
 import javax.persistence.*;
 
 @Entity
-@Table(name = "reviews", indexes = { @Index(name = "reviews_unique_idx", unique = true, columnList = "productId,reviewId") })
+@Table(name = "reviews", indexes = {@Index(name = "reviews_unique_idx", unique = true, columnList = "productId,reviewId")})
 public class ReviewEntity {
 
     @Id
