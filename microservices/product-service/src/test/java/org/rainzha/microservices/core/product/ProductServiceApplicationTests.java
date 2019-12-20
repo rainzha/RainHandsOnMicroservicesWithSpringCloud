@@ -102,7 +102,7 @@ public class ProductServiceApplicationTests {
                 .jsonPath("$.message").isEqualTo("Type mismatch.");
     }
 
-    @org.junit.Test
+    @Test
     public void getProductNotFound() {
         int productIdNotFound = 13;
         getAndVerifyProduct(productIdNotFound, NOT_FOUND)
