@@ -2,22 +2,31 @@ package org.rainzha.microservices.core.recommendation;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.rainzha.api.core.product.Product;
 import org.rainzha.api.core.recommendation.Recommendation;
+import org.rainzha.api.event.Event;
 import org.rainzha.microservices.core.recommendation.persistence.RecommendationRepository;
+import org.rainzha.util.exceptions.InvalidInputException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.cloud.stream.messaging.Sink;
 import org.springframework.http.HttpStatus;
+import org.springframework.integration.channel.AbstractMessageChannel;
+import org.springframework.messaging.MessagingException;
+import org.springframework.messaging.support.GenericMessage;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.rainzha.api.event.Event.Type.CREATE;
+import static org.rainzha.api.event.Event.Type.DELETE;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
-import static reactor.core.publisher.Mono.just;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"spring.data.mongodb.port: 0"})
 @AutoConfigureWebTestClient
-class RecommendationServiceApplicationTests {
+public class RecommendationServiceApplicationTests {
 
     @Autowired
     private WebTestClient client;
@@ -25,20 +34,26 @@ class RecommendationServiceApplicationTests {
     @Autowired
     private RecommendationRepository repository;
 
+    @Autowired
+    private Sink channels;
+
+    private AbstractMessageChannel input = null;
+
     @BeforeEach
     public void setupDb() {
-        repository.deleteAll();
+        input = (AbstractMessageChannel) channels.input();
+        repository.deleteAll().block();
     }
 
     @Test
     public void getRecommendationsByProductId() {
         int productId = 1;
 
-        postAndVerifyRecommendation(productId, 1, OK);
-        postAndVerifyRecommendation(productId, 2, OK);
-        postAndVerifyRecommendation(productId, 3, OK);
+        sendCreateRecommendationEvent(productId, 1);
+        sendCreateRecommendationEvent(productId, 2);
+        sendCreateRecommendationEvent(productId, 3);
 
-        assertEquals(3, repository.findByProductId(productId).size());
+        assertEquals(3, (long) repository.findByProductId(productId).count().block());
 
         getAndVerifyRecommendationsByProductId(productId, OK)
                 .jsonPath("$.length()").isEqualTo(3)
@@ -51,17 +66,23 @@ class RecommendationServiceApplicationTests {
         int productId = 1;
         int recommendationId = 1;
 
-        postAndVerifyRecommendation(productId, recommendationId, OK)
-                .jsonPath("$.productId").isEqualTo(productId)
-                .jsonPath("$.recommendationId").isEqualTo(recommendationId);
+        sendCreateRecommendationEvent(productId, recommendationId);
 
-        assertEquals(1, repository.count());
+        assertEquals(1, (long) repository.count().block());
 
-        postAndVerifyRecommendation(productId, recommendationId, UNPROCESSABLE_ENTITY)
-                .jsonPath("$.path").isEqualTo("/recommendation")
-                .jsonPath("$.message").isEqualTo("Duplicate key, Product Id: 1, Recommendation Id:1");
+        try {
+            sendCreateRecommendationEvent(productId, recommendationId);
+            fail("Expected a MessagingException here!");
+        } catch (MessagingException me) {
+            if (me.getCause() instanceof InvalidInputException) {
+                InvalidInputException iie = (InvalidInputException) me.getCause();
+                assertEquals("Duplicate key, Product Id: 1, Recommendation Id:1", iie.getMessage());
+            } else {
+                fail("Expected a InvalidInputException as the root cause!");
+            }
+        }
 
-        assertEquals(1, repository.count());
+        assertEquals(1, (long) repository.count().block());
     }
 
     @Test
@@ -69,13 +90,13 @@ class RecommendationServiceApplicationTests {
         int productId = 1;
         int recommendationId = 1;
 
-        postAndVerifyRecommendation(productId, recommendationId, OK);
-        assertEquals(1, repository.findByProductId(productId).size());
+        sendCreateRecommendationEvent(productId, recommendationId);
+        assertEquals(1, (long) repository.findByProductId(productId).count().block());
 
-        deleteAndVerifyRecommendationsByProductId(productId, OK);
-        assertEquals(0, repository.findByProductId(productId).size());
+        sendDeleteRecommendationEvent(productId);
+        assertEquals(0, (long) repository.findByProductId(productId).count().block());
 
-        deleteAndVerifyRecommendationsByProductId(productId, OK);
+        sendDeleteRecommendationEvent(productId);
     }
 
     @Test
@@ -119,21 +140,14 @@ class RecommendationServiceApplicationTests {
                 .expectBody();
     }
 
-    private WebTestClient.BodyContentSpec postAndVerifyRecommendation(int productId, int recommendationId, HttpStatus expectedStatus) {
+    private void sendCreateRecommendationEvent(int productId, int recommendationId) {
         Recommendation recommendation = new Recommendation(productId, recommendationId, "Author " + recommendationId, recommendationId, "Content " + recommendationId, "SA");
-        return client.post()
-                .uri("/recommendation")
-                .body(just(recommendation), Recommendation.class)
-                .exchange()
-                .expectStatus().isEqualTo(expectedStatus)
-                .expectBody();
+        Event<Integer, Product> event = new Event(CREATE, productId, recommendation);
+        input.send(new GenericMessage<>(event));
     }
 
-    private WebTestClient.BodyContentSpec deleteAndVerifyRecommendationsByProductId(int productId, HttpStatus expectedStatus) {
-        return client.delete()
-                .uri("/recommendation?productId=" + productId)
-                .exchange()
-                .expectStatus().isEqualTo(expectedStatus)
-                .expectBody();
+    private void sendDeleteRecommendationEvent(int productId) {
+        Event<Integer, Product> event = new Event(DELETE, productId, null);
+        input.send(new GenericMessage<>(event));
     }
 }

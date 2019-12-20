@@ -1,10 +1,8 @@
 package org.rainzha.microservices.composite.product;
 
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.rainzha.api.composite.product.ProductAggregate;
-import org.rainzha.api.composite.product.RecommendationSummary;
-import org.rainzha.api.composite.product.ReviewSummary;
 import org.rainzha.api.core.product.Product;
 import org.rainzha.api.core.recommendation.Recommendation;
 import org.rainzha.api.core.review.Review;
@@ -17,16 +15,17 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import static java.util.Collections.singletonList;
 import static org.mockito.Mockito.when;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
-import static reactor.core.publisher.Mono.just;
 
 @SpringBootTest(webEnvironment = RANDOM_PORT)
 @AutoConfigureWebTestClient
-class ProductCompositeServiceApplicationTests {
+public class ProductCompositeServiceApplicationTests {
 
     private static final int PRODUCT_ID_OK = 1;
     private static final int PRODUCT_ID_NOT_FOUND = 2;
@@ -40,47 +39,23 @@ class ProductCompositeServiceApplicationTests {
 
     @BeforeEach
     public void setUp() {
+
         when(compositeIntegration.getProduct(PRODUCT_ID_OK)).
-                thenReturn(new Product(PRODUCT_ID_OK, "name", 1, "mock-address"));
+                thenReturn(Mono.just(new Product(PRODUCT_ID_OK, "name", 1, "mock-address")));
+
         when(compositeIntegration.getRecommendations(PRODUCT_ID_OK)).
-                thenReturn(singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address")));
+                thenReturn(Flux.fromIterable(singletonList(new Recommendation(PRODUCT_ID_OK, 1, "author", 1, "content", "mock address"))));
+
         when(compositeIntegration.getReviews(PRODUCT_ID_OK)).
-                thenReturn(singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address")));
+                thenReturn(Flux.fromIterable(singletonList(new Review(PRODUCT_ID_OK, 1, "author", "subject", "content", "mock address"))));
 
         when(compositeIntegration.getProduct(PRODUCT_ID_NOT_FOUND)).thenThrow(new NotFoundException("NOT FOUND: " + PRODUCT_ID_NOT_FOUND));
+
         when(compositeIntegration.getProduct(PRODUCT_ID_INVALID)).thenThrow(new InvalidInputException("INVALID: " + PRODUCT_ID_INVALID));
     }
 
     @Test
     public void contextLoads() {
-    }
-
-    @Test
-    public void createCompositeProduct1() {
-        ProductAggregate compositeProduct = new ProductAggregate(1, "name", 1, null, null, null);
-
-        postAndVerifyProduct(compositeProduct, OK);
-    }
-
-    @Test
-    public void createCompositeProduct2() {
-        ProductAggregate compositeProduct = new ProductAggregate(1, "name", 1,
-                singletonList(new RecommendationSummary(1, "a", 1, "c")),
-                singletonList(new ReviewSummary(1, "a", "s", "c")), null);
-
-        postAndVerifyProduct(compositeProduct, OK);
-    }
-
-    @Test
-    public void deleteCompositeProduct() {
-        ProductAggregate compositeProduct = new ProductAggregate(1, "name", 1,
-                singletonList(new RecommendationSummary(1, "a", 1, "c")),
-                singletonList(new ReviewSummary(1, "a", "s", "c")), null);
-
-        postAndVerifyProduct(compositeProduct, OK);
-
-        deleteAndVerifyProduct(compositeProduct.getProductId(), OK);
-        deleteAndVerifyProduct(compositeProduct.getProductId(), OK);
     }
 
     @Test
@@ -111,20 +86,5 @@ class ProductCompositeServiceApplicationTests {
                 .exchange()
                 .expectStatus().isEqualTo(expectedStatus)
                 .expectBody();
-    }
-
-    private void postAndVerifyProduct(ProductAggregate compositeProduct, HttpStatus expectedStatus) {
-        client.post()
-                .uri("/product-composite")
-                .body(just(compositeProduct), ProductAggregate.class)
-                .exchange()
-                .expectStatus().isEqualTo(expectedStatus);
-    }
-
-    private void deleteAndVerifyProduct(int productId, HttpStatus expectedStatus) {
-        client.delete()
-                .uri("/product-composite/" + productId)
-                .exchange()
-                .expectStatus().isEqualTo(expectedStatus);
     }
 }

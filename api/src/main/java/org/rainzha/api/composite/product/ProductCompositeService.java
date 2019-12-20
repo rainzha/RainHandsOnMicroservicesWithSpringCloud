@@ -5,16 +5,17 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import org.springframework.web.bind.annotation.*;
+import reactor.core.publisher.Mono;
 
 @Api(description = "REST API for composite product information.")
 public interface ProductCompositeService {
 
     /**
      * Sample usage:
-     * <p>
+     *
      * curl -X POST $HOST:$PORT/product-composite \
-     * -H "Content-Type: application/json" --data \
-     * '{"productId":123,"name":"product 123","weight":123}'
+     *   -H "Content-Type: application/json" --data \
+     *   '{"productId":123,"name":"product 123","weight":123}'
      *
      * @param body
      */
@@ -26,7 +27,7 @@ public interface ProductCompositeService {
             @ApiResponse(code = 422, message = "Unprocessable entity, input parameters caused the processing to fail. See response message for more information.")
     })
     @PostMapping(
-            value = "/product-composite",
+            value    = "/product-composite",
             consumes = "application/json")
     void createCompositeProduct(@RequestBody ProductAggregate body);
 
@@ -45,13 +46,14 @@ public interface ProductCompositeService {
             @ApiResponse(code = 422, message = "Unprocessable entity, input parameters caused the processing to fail. See response message for more information.")
     })
     @GetMapping(
-            value = "/product-composite/{productId}",
+            value    = "/product-composite/{productId}",
             produces = "application/json")
-    ProductAggregate getCompositeProduct(@PathVariable int productId);
+    Mono<ProductAggregate> getCompositeProduct(@PathVariable int productId);
+
 
     /**
      * Sample usage:
-     * <p>
+     *
      * curl -X DELETE $HOST:$PORT/product-composite/1
      *
      * @param productId
