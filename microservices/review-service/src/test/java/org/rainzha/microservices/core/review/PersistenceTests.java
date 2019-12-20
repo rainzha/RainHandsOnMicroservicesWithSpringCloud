@@ -12,7 +12,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.transaction.annotation.Propagation.NOT_SUPPORTED;
 
@@ -34,6 +35,7 @@ public class PersistenceTests {
 
         assertEqualsReview(entity, savedEntity);
     }
+
 
     @Test
     public void create() {
@@ -66,7 +68,7 @@ public class PersistenceTests {
     public void getByProductId() {
         List<ReviewEntity> entityList = repository.findByProductId(savedEntity.getProductId());
 
-        assertThat(entityList).hasSize(1);
+        assertThat(entityList, hasSize(1));
         assertEqualsReview(savedEntity, entityList.get(0));
     }
 
