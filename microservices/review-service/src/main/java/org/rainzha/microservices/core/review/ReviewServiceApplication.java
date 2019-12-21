@@ -24,8 +24,7 @@ public class ReviewServiceApplication {
 
     @Autowired
     public ReviewServiceApplication(
-            @Value("${spring.datasource.maximum-pool-size:10}")
-                    Integer connectionPoolSize
+            @Value("${spring.datasource.maximum-pool-size:10}") Integer connectionPoolSize
     ) {
         this.connectionPoolSize = connectionPoolSize;
     }

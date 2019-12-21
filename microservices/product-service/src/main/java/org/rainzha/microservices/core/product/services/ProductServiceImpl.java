@@ -65,6 +65,10 @@ public class ProductServiceImpl implements ProductService {
         if (productId < 1) throw new InvalidInputException("Invalid productId: " + productId);
 
         LOG.debug("deleteProduct: tries to delete an entity with productId: {}", productId);
-        repository.findByProductId(productId).log().map(repository::delete).flatMap(e -> e).block();
+        repository.findByProductId(productId)
+                .log()
+                .map(repository::delete)
+                .flatMap(e -> e)
+                .block();
     }
 }
