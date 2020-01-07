@@ -32,7 +32,7 @@ import static org.springframework.cloud.stream.test.matcher.MessageQueueMatcher.
 import static org.springframework.http.HttpStatus.OK;
 import static reactor.core.publisher.Mono.just;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT)
+@SpringBootTest(webEnvironment=RANDOM_PORT, properties = {"eureka.client.enabled=false"})
 @AutoConfigureWebTestClient
 public class MessagingTests {
 
