@@ -24,7 +24,9 @@ import static org.rainzha.api.event.Event.Type.DELETE;
 import static org.springframework.boot.test.context.SpringBootTest.WebEnvironment.RANDOM_PORT;
 import static org.springframework.http.HttpStatus.*;
 
-@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {"spring.datasource.url=jdbc:h2:mem:review-db"})
+@SpringBootTest(webEnvironment = RANDOM_PORT, properties = {
+        "eureka.client.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:review-db"})
 @AutoConfigureWebTestClient
 public class ReviewServiceApplicationTests {
 
