@@ -54,7 +54,7 @@ services:
     command: mongod --smallfiles
     healthcheck:
       test: "mongo --eval 'db.stats().ok'"
-      interval: 20s
+      interval: 10s
       timeout: 5s
       retries: 10
 
@@ -70,9 +70,9 @@ services:
       - MYSQL_PASSWORD=pwd
     healthcheck:
       test: "/usr/bin/mysql --user=user --password=pwd --execute \"SHOW DATABASES;\""
-      interval: 20s
+      interval: 10s
       timeout: 5s
-      retries: 80
+      retries: 10
 
   rabbitmq:
     image: rabbitmq:3.8.2-management
@@ -81,6 +81,6 @@ services:
       - "15672:15672"
     healthcheck:
       test: ["CMD", "rabbitmqctl", "status"]
-      interval: 20s
+      interval: 10s
       timeout: 5s
       retries: 10

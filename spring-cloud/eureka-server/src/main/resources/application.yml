@@ -13,5 +13,6 @@ eureka:
   server:
     waitTimeInMsWhenSyncEmpty: 0
     response-cache-update-interval-ms: 5000
+    enable-self-preservation: false
 
 management.endpoints.web.exposure.include: "*"
